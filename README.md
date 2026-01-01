@@ -4,6 +4,8 @@ This is an optimized ESPHome external component for the **DS2482-100** and **DS2
 
 Most existing drivers use software-based bit-banging for 1-Wire operations, which is slow and CPU-intensive. This implementation leverages the **hardware capabilities** of the DS2482 chip for maximum reliability and speed.
 
+Tested with 10+ DS18B20 sensors at 1s update interval. Supports hot-swapping and handles sensor disconnections correctly by publishing NAN.
+
 ## Key Features
 
 * **Hardware-Accelerated ROM Search:** Uses the DS2482 `1-Wire Triplet` (0x78) command. This offloads the 1-Wire bit-processing to the chip's internal logic, making device discovery robust even on busy buses.
