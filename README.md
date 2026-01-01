@@ -34,3 +34,15 @@ sensor:
     address: 0x2861640B4E27C94C
     channel: 1
     update_interval: 60s
+
+
+
+Hardware Search Button
+You can add a button to trigger a deep scan of all channels to find your sensor addresses:
+
+button:
+  - platform: template
+    name: "Scan 1-Wire Bus"
+    on_press:
+      lambda: |-
+        id(ds_hub).scan_and_log_devices();
