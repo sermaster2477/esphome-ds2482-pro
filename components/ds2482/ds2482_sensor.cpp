@@ -37,9 +37,10 @@ void DS2482Sensor::update() {
         this->publish_state(result);
         this->status_clear_warning();
       } else {
-        // Выводим в лог, что именно мы прочитали, для отладки
-        ESP_LOGVV(TAG, "CRC Fail. Got: %02X %02X %02X...", data[0], data[1], data[2]);
+        ESP_LOGW(TAG, "CRC Error or sensor disconnected for address 0x%llX", this->address_);
         this->status_set_warning();
+        // ПРАВИЛЬНОЕ ПОВЕДЕНИЕ:
+        this->publish_state(NAN); 
       }
     }
   });
@@ -52,4 +53,5 @@ void DS2482Sensor::dump_config() {
 }
 
 }  // namespace ds2482
+
 }  // namespace esphome
