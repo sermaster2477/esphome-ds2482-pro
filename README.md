@@ -20,7 +20,7 @@ Add this to your ESPHome configuration:
 external_components:
   - source:
       type: git
-      url: [https://github.com/YOUR_USERNAME/esphome-ds2482-custom](https://github.com/YOUR_USERNAME/esphome-ds2482-custom)
+      url: [https://github.com/sermaster2477/esphome-ds2482-pro](https://github.com/sermaster2477/esphome-ds2482-pro)
     components: [ ds2482 ]
 
 # Example configuration
