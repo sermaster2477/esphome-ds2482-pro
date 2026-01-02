@@ -19,10 +19,11 @@ Tested with 10+ DS18B20 sensors at 1s update interval. Supports hot-swapping and
 Add this to your ESPHome configuration:
 
 ```yaml
+
 external_components:
   - source:
       type: git
-      url: [https://github.com/sermaster2477/esphome-ds2482-pro](https://github.com/sermaster2477/esphome-ds2482-pro)
+      url: https://github.com/sermaster2477/esphome-ds2482-pro
     components: [ ds2482 ]
 
 # Example configuration
@@ -32,15 +33,15 @@ ds2482:
 
 sensor:
   - platform: ds2482
+    ds2482_id: ds_hub
     name: "Living Room Temp"
-    address: 0x2861640B4E27C94C
-    channel: 1
+    address: 0x2861640B4E27C94C  # your thermometer's address
+    channel: 1                   # channel number ds2482-800 from 0 to 7
     update_interval: 60s
 
-
-
-Hardware Search Button
-You can add a button to trigger a deep scan of all channels to find your sensor addresses:
+#  Hardware Search Button
+#  You can add a button to trigger a deep scan of all channels to find your sensor addresses:
+#  You can copy them from the log to add them to the YAML code.
 
 button:
   - platform: template
