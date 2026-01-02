@@ -20,6 +20,15 @@ Add this to your ESPHome configuration:
 
 ```yaml
 
+# bus description i2c for connection ds2482
+i2c:
+  - id: bus_a
+    sda: GPIO1         #  your connection pin number
+    scl: GPIO2         #  your connection pin number
+    frequency: 400kHz  #  IFor more stable operation, you can reduce the speed to 100 kHz
+    scan: true         #  display in the logs which addresses ds2482 are found on the bus
+
+
 external_components:
   - source:
       type: git
@@ -29,7 +38,7 @@ external_components:
 # Example configuration
 ds2482:
   id: ds_hub
-  address: 0x18
+  address: 0x18    # address if all address lines ds2482-800 are shorted to ground
 
 sensor:
   - platform: ds2482
@@ -45,7 +54,7 @@ sensor:
 
 button:
   - platform: template
-    name: "Scan 1-Wire Bus"
+    name: "Scan 1-Wire Bus"  #  scans all channels and displays the addresses of found thermometers in the log on a channel-by-channel basis
     on_press:
       lambda: |-
         id(ds_hub).scan_and_log_devices();
