@@ -34,23 +34,32 @@ void DS2482Sensor::update() {
 
       if ((this->parent_->crc8(data, 8) == data[8]) && !all_zeros) {
         float result = (int16_t)((data[1] << 8) | data[0]) / 16.0f;
+
+        // Защита от 85 градусов
+        static bool initial_ignore = false;
+        if (!initial_ignore && std::abs(result - 85.0f) < 0.01f) {
+            initial_ignore = true;
+            return; 
+        }
+        initial_ignore = true;
+
         this->publish_state(result);
         this->status_clear_warning();
-        this->failed_consecutive_read_ = 0; 
+        this->failed_consecutive_read_ = 0; // Сбрасываем счетчик в классе
         success = true;
       }
     }
 
     if (!success) {
-      this->failed_consecutive_read_++;
+      // Прямое обращение к переменной из ds2482_sensor.h
+      this->failed_consecutive_read_++; 
       this->status_set_warning();
       
-      // Используем ESP_LOGE (красный), чтобы точно увидеть в консоли
-      ESP_LOGE(TAG, "!!! ПОПЫТКА %d ИЗ 5 !!!", this->failed_consecutive_read_);
+      ESP_LOGE(TAG, "!!! ДАТЧИК %016llX: ОШИБКА %d ИЗ 5 !!!", this->address_, this->failed_consecutive_read_);
 
       if (this->failed_consecutive_read_ >= 5) {
         if (!std::isnan(this->state)) {
-          ESP_LOGE(TAG, "ДАТЧИК ПОТЕРЯН! ШЛЕМ NAN");
+          ESP_LOGE(TAG, "СЛИШКОМ МНОГО ОШИБОК. ОТПРАВЛЯЮ NAN.");
           this->publish_state(NAN);
         }
       }
@@ -61,9 +70,8 @@ void DS2482Sensor::update() {
 void DS2482Sensor::dump_config() {
   LOG_SENSOR("", "DS2482 Sensor", this);
   ESP_LOGCONFIG(TAG, "  Channel: %d", this->channel_);
-  ESP_LOGCONFIG(TAG, "  Address: 0x%llX", this->address_);
+  ESP_LOGCONFIG(TAG, "  Address: 0x%016llX", this->address_);
 }
 
 }  // namespace ds2482
 }  // namespace esphome
-
