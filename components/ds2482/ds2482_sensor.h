@@ -23,6 +23,7 @@ class DS2482Sensor : public sensor::Sensor, public PollingComponent {
   uint64_t address_;
   uint8_t channel_;
   bool overdrive_{false}; 
+  int failed_consecutive_read_{0};
 };
 
 }  // namespace ds2482
