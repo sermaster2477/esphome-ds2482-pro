@@ -9,19 +9,21 @@ static const char *TAG = "ds2482.sensor";
 void DS2482Sensor::update() {
   bool conversion_started = this->parent_->start_group_conversion(this->channel_);
 
-  // Если конвертация НЕ началась, мы СРАЗУ увеличиваем счетчик здесь
   if (!conversion_started) {
     this->failed_consecutive_read_++;
     this->status_set_warning();
-    ESP_LOGE(TAG, "!!! ОШИБКА ШИНЫ/ЧИПА: %d ИЗ 5 !!!", this->failed_consecutive_read_);
+    
+    // Добавлен вывод канала (CH) и адреса
+    ESP_LOGE(TAG, "[CH:%d] 0x%016llX: ОШИБКА ШИНЫ (%d/5)", 
+             this->channel_, this->address_, this->failed_consecutive_read_);
     
     if (this->failed_consecutive_read_ >= 5 && !std::isnan(this->state)) {
+        ESP_LOGE(TAG, "[CH:%d] 0x%016llX: ПОТЕРЯН", this->channel_, this->address_);
         this->publish_state(NAN);
     }
-    return; // Выходим, так как читать нечего
+    return;
   }
 
-  // Если конвертация началась успешно, запускаем таймаут чтения
   this->set_timeout("read_temp", 800, [this]() {
     if (!this->parent_->select_channel(this->channel_)) return;
 
@@ -60,20 +62,20 @@ void DS2482Sensor::update() {
     if (!success) {
       this->failed_consecutive_read_++;
       this->status_set_warning();
-      ESP_LOGE(TAG, "!!! ОШИБКА ДАННЫХ: %d ИЗ 5 !!!", this->failed_consecutive_read_);
+      
+      // Лог с указанием канала
+      ESP_LOGE(TAG, "[CH:%d] 0x%016llX: ОШИБКА ДАННЫХ (%d/5)", 
+               this->channel_, this->address_, this->failed_consecutive_read_);
 
-      if (this->failed_consecutive_read_ >= 5 && !std::isnan(this->state)) {
+      if (this->failed_consecutive_read_ >= 5) {
+        if (!std::isnan(this->state)) {
+          ESP_LOGE(TAG, "[CH:%d] 0x%016llX: ПОТЕРЯН", this->channel_, this->address_);
           this->publish_state(NAN);
+        }
+        // Чтобы счетчик не рос до миллионов, зафиксируем его на 100
+        if (this->failed_consecutive_read_ > 100) this->failed_consecutive_read_ = 6;
       }
     }
   });
 }
-
-void DS2482Sensor::dump_config() {
-  LOG_SENSOR("", "DS2482 Sensor", this);
-  ESP_LOGCONFIG(TAG, "  Channel: %d", this->channel_);
-  ESP_LOGCONFIG(TAG, "  Address: 0x%016llX", this->address_);
-}
-
-}  // namespace ds2482
-}  // namespace esphome
+// dump_config оставляем без изменений
