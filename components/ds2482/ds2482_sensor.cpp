@@ -78,4 +78,12 @@ void DS2482Sensor::update() {
     }
   });
 }
-// dump_config оставляем без изменений
+
+void DS2482Sensor::dump_config() {
+  LOG_SENSOR("", "DS2482 Sensor", this);
+  ESP_LOGCONFIG(TAG, "  Channel: %d", this->channel_);
+  ESP_LOGCONFIG(TAG, "  Address: 0x%016llX", this->address_);
+}
+
+}  // namespace ds2482
+}  // namespace esphome
