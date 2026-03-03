@@ -12,13 +12,9 @@ void DS2482Sensor::update() {
   if (!conversion_started) {
     this->failed_consecutive_read_++;
     this->status_set_warning();
-    
-    // Добавлен вывод канала (CH) и адреса
-    ESP_LOGE(TAG, "[CH:%d] 0x%016llX: ОШИБКА ШИНЫ (%d/5)", 
+    ESP_LOGE(TAG, "[CH:%d] 0x%016llX: BUS ERROR (%d/5)", 
              this->channel_, this->address_, this->failed_consecutive_read_);
-    
     if (this->failed_consecutive_read_ >= 5 && !std::isnan(this->state)) {
-        ESP_LOGE(TAG, "[CH:%d] 0x%016llX: ПОТЕРЯН", this->channel_, this->address_);
         this->publish_state(NAN);
     }
     return;
@@ -46,16 +42,21 @@ void DS2482Sensor::update() {
 
       if ((this->parent_->crc8(data, 8) == data[8]) && !all_zeros) {
         float result = (int16_t)((data[1] << 8) | data[0]) / 16.0f;
-        
-        // Фильтр 85 градусов
-        if (std::abs(result - 85.0f) < 0.01f && this->failed_consecutive_read_ == 0) {
-            return; 
-        }
 
-        this->publish_state(result);
-        this->status_clear_warning();
-        this->failed_consecutive_read_ = 0; 
-        success = true;
+        if (result < -55.0f || result > 127.0f) {
+            ESP_LOGE(TAG, "[CH:%d] 0x%016llX: OUT OF RANGE %.1f°C (%d/5)", 
+                     this->channel_, this->address_, result, this->failed_consecutive_read_ + 1);
+        } else {
+            if (std::abs(result - 85.0f) < 0.01f && this->failed_consecutive_read_ == 0) {
+                ESP_LOGD(TAG, "[CH:%d] 0x%016llX: Ignoring power-on 85°C", this->channel_, this->address_);
+                return; 
+            }
+
+            this->publish_state(result);
+            this->status_clear_warning();
+            this->failed_consecutive_read_ = 0; 
+            success = true;
+        }
       }
     }
 
@@ -63,17 +64,14 @@ void DS2482Sensor::update() {
       this->failed_consecutive_read_++;
       this->status_set_warning();
       
-      // Лог с указанием канала
-      ESP_LOGE(TAG, "[CH:%d] 0x%016llX: ОШИБКА ДАННЫХ (%d/5)", 
-               this->channel_, this->address_, this->failed_consecutive_read_);
+      if (this->failed_consecutive_read_ <= 5) {
+          ESP_LOGE(TAG, "[CH:%d] 0x%016llX: DATA ERROR (%d/5)", 
+                   this->channel_, this->address_, this->failed_consecutive_read_);
+      }
 
-      if (this->failed_consecutive_read_ >= 5) {
-        if (!std::isnan(this->state)) {
-          ESP_LOGE(TAG, "[CH:%d] 0x%016llX: ПОТЕРЯН", this->channel_, this->address_);
+      if (this->failed_consecutive_read_ >= 5 && !std::isnan(this->state)) {
+          ESP_LOGE(TAG, "[CH:%d] 0x%016llX: SENSOR LOST", this->channel_, this->address_);
           this->publish_state(NAN);
-        }
-        // Чтобы счетчик не рос до миллионов, зафиксируем его на 100
-        if (this->failed_consecutive_read_ > 100) this->failed_consecutive_read_ = 6;
       }
     }
   });
